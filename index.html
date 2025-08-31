@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TENG 圖片處理工具 v1.9 - 效能優化版</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/heic2any@2.1.0/dist/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         :root {
             --primary-color: #0033A0;
@@ -614,6 +614,20 @@
                 return;
             }
             
+            // 釋放記憶體
+            originalImages.forEach(img => {
+                if (img.img && img.img.src) {
+                    URL.revokeObjectURL(img.img.src);
+                }
+            });
+            
+            // 釋放處理後的 blob URL
+            processedBlobs.forEach(blob => {
+                if (blob.url) {
+                    URL.revokeObjectURL(blob.url);
+                }
+            });
+            
             originalImages = [];
             processedBlobs = [];
             base64Data = [];
@@ -735,7 +749,12 @@
                 if (type === 'image') {
                     const isHeicHeif = file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
                     if (isHeicHeif) {
-                        heic2any({ blob: file, toType: 'image/png' })
+                        // 使用較新版本的 heic2any
+                        heic2any({ 
+                            blob: file, 
+                            toType: 'image/png',
+                            quality: 0.8 // 添加品質參數
+                        })
                             .then(result => {
                                 const reader = new FileReader();
                                 reader.onload = function(e) {
@@ -748,14 +767,10 @@
                             })
                             .catch(err => {
                                 showError(`HEIC/HEIF 轉換失敗 (${file.name})：${err.message}`);
-                                const reader = new FileReader();
-                                reader.onload = function(e) {
-                                    handleImageLoad(file, e.target.result, originalImages.length, 'image');
-                                    if (i === files.length - 1) {
-                                        document.querySelector('.status-indicator').className = 'status-indicator status-complete';
-                                    }
-                                };
-                                reader.readAsDataURL(file);
+                                // 不再嘗試處理原始 HEIC 檔案，因為瀏覽器無法直接處理
+                                if (i === files.length - 1) {
+                                    document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                }
                             });
                     } else {
                         const reader = new FileReader();
@@ -1107,6 +1122,11 @@
                     const originalName = item.file.name.split('.').slice(0, -1).join('.');
                     const extension = format.split('/')[1];
                     const newFileName = `${originalName}_${width}x${height}.${extension}`;
+                    
+                    // 釋放 canvas 記憶體
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    
                     processedBlobs.push({ blob, name: newFileName });
 
                     if (totalImages > 1) {
@@ -1114,7 +1134,8 @@
                     }
 
                     const thumbnail = document.createElement('img');
-                    thumbnail.src = URL.createObjectURL(blob);
+                    const thumbnailUrl = URL.createObjectURL(blob);
+                    thumbnail.src = thumbnailUrl;
                     thumbnail.className = 'thumbnail';
                     thumbnail.dataset.index = i;
                     thumbnail.title = newFileName;
@@ -1140,7 +1161,13 @@
             } else {
                 try {
                     updateProgress(processedCount, totalImages, '生成ZIP檔案中...');
-                    downloadBlob = await zip.generateAsync({ type: 'blob' });
+                    downloadBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: "DEFLATE",
+                        compressionOptions: {
+                            level: 6
+                        }
+                    });
                     downloadFileName = 'processed_images.zip';
                     downloadButton.textContent = '下載 ZIP 壓縮檔';
                 } catch (err) {
@@ -1185,6 +1212,11 @@
 
                 try {
                     const base64String = canvas.toDataURL(currentFormatValue);
+                    
+                    // 釋放 canvas 記憶體
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    
                     base64Data.push({ name: item.file.name, base64: base64String });
 
                     const outputDiv = document.createElement('div');
@@ -1217,7 +1249,13 @@
             } else {
                 try {
                     updateProgress(processedCount, totalImages, '生成ZIP檔案中...');
-                    downloadBlob = await zip.generateAsync({ type: 'blob' });
+                    downloadBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: "DEFLATE",
+                        compressionOptions: {
+                            level: 6
+                        }
+                    });
                     downloadFileName = 'base64_files.zip';
                     downloadButton.textContent = '下載 Base64 ZIP 壓縮檔';
                 } catch (err) {
@@ -1289,11 +1327,17 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
+                    
+                    // 釋放 canvas 記憶體
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    
                     const fileName = `converted_image_${Date.now()}.${format.split('/')[1]}`;
                     processedBlobs.push({ blob, name: fileName });
 
                     const thumbnail = document.createElement('img');
-                    thumbnail.src = URL.createObjectURL(blob);
+                    const thumbnailUrl = URL.createObjectURL(blob);
+                    thumbnail.src = thumbnailUrl;
                     thumbnail.className = 'thumbnail';
                     thumbnail.title = fileName;
                     document.getElementById('previewContainer').appendChild(thumbnail);
@@ -1331,6 +1375,11 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
+                    
+                    // 釋放 canvas 記憶體
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    
                     const originalName = item.file.name.split('.').slice(0, -1).join('.');
                     const extension = format.split('/')[1];
                     const newFileName = `${originalName}.${extension}`;
@@ -1338,7 +1387,8 @@
                     zip.file(newFileName, blob);
 
                     const thumbnail = document.createElement('img');
-                    thumbnail.src = URL.createObjectURL(blob);
+                    const thumbnailUrl = URL.createObjectURL(blob);
+                    thumbnail.src = thumbnailUrl;
                     thumbnail.className = 'thumbnail';
                     thumbnail.dataset.index = originalImages.indexOf(item);
                     thumbnail.title = newFileName;
@@ -1356,7 +1406,13 @@
             if (base64Files.length > 0) {
                 try {
                     updateProgress(processedCount, totalItems, '生成ZIP檔案中...');
-                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: "DEFLATE",
+                        compressionOptions: {
+                            level: 6
+                        }
+                    });
                     const downloadButton = document.getElementById('downloadButton');
                     downloadButton.style.display = 'block';
                     downloadBlob = zipBlob;
