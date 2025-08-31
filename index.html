@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TENG 圖片處理工具 v1.9 - 效能優化版</title>
+    <title>TENG 圖片處理工具 v2.0 - 優化版</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/heic2any@2.1.0/dist/heic2any.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -310,7 +310,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>TENG 圖片處理工具 <span class="version">v1.9 - 效能優化版</span></h1>
+        <h1>TENG 圖片處理工具 <span class="version">v2.0 - 優化版</span></h1>
         
         <div class="section">
             <label>處理模式</label>
@@ -321,13 +321,13 @@
         </div>
         
         <div class="section file-button-container">
-            <div>
+            <div id="imageFileContainer">
                 <label>圖片檔案</label>
                 <button class="file-button" onclick="triggerFileInput('imageInput')">選擇圖片</button>
                 <input type="file" id="imageInput" accept="image/*,.heic,.heif" multiple class="hidden">
                 <div class="help-text">支援 JPEG, PNG, HEIC, HEIF</div>
             </div>
-            <div>
+            <div id="imageFolderContainer">
                 <label>圖片資料夾</label>
                 <button class="file-button" onclick="triggerFileInput('imageFolderInput')">選擇資料夾</button>
                 <input type="file" id="imageFolderInput" webkitdirectory accept="image/*,.heic,.heif" class="hidden">
@@ -654,7 +654,9 @@
             document.querySelectorAll('.format-button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.value === currentFormatValue);
             });
-            updateFileList();
+            
+            // 重置按鈕顯示狀態
+            updateButtonVisibility();
         }
 
         // 顯示錯誤訊息
@@ -679,6 +681,35 @@
             setTimeout(() => {
                 successDiv.style.display = 'none';
             }, 5000);
+        }
+
+        // 更新按鈕可見性
+        function updateButtonVisibility() {
+            const hasImageFiles = originalImages.some(item => item.type === 'image');
+            const hasBase64Files = originalImages.some(item => item.type === 'base64');
+            const mode = document.querySelector('.mode-button.active').dataset.mode;
+            
+            // 在Base64模式下
+            if (mode === 'base64') {
+                // 如果有Base64檔案，隱藏圖片相關按鈕
+                document.getElementById('imageFileContainer').style.display = hasBase64Files ? 'none' : 'block';
+                document.getElementById('imageFolderContainer').style.display = hasBase64Files ? 'none' : 'block';
+                document.getElementById('toBase64Button').style.display = hasBase64Files ? 'none' : 'block';
+                
+                // 如果有圖片檔案，隱藏Base64相關按鈕
+                document.getElementById('base64FileInputContainer').style.display = hasImageFiles ? 'none' : 'block';
+                document.getElementById('base64FolderInputContainer').style.display = hasImageFiles ? 'none' : 'block';
+                document.getElementById('fromBase64Button').style.display = hasImageFiles ? 'none' : 'block';
+            } 
+            // 在調整尺寸模式下
+            else {
+                // 如果有Base64檔案，隱藏圖片相關按鈕
+                document.getElementById('imageFileContainer').style.display = hasBase64Files ? 'none' : 'block';
+                document.getElementById('imageFolderContainer').style.display = hasBase64Files ? 'none' : 'block';
+                document.getElementById('resizeButton').style.display = hasBase64Files ? 'none' : 'block';
+                
+                // 如果有圖片檔案，隱藏Base64相關按鈕（在調整尺寸模式下Base64按鈕本來就是隱藏的）
+            }
         }
 
         // 處理檔案輸入
@@ -761,6 +792,7 @@
                                     handleImageLoad(file, e.target.result, originalImages.length, 'image');
                                     if (i === files.length - 1) {
                                         document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                        updateButtonVisibility();
                                     }
                                 };
                                 reader.readAsDataURL(result);
@@ -770,6 +802,7 @@
                                 // 不再嘗試處理原始 HEIC 檔案，因為瀏覽器無法直接處理
                                 if (i === files.length - 1) {
                                     document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                    updateButtonVisibility();
                                 }
                             });
                     } else {
@@ -778,6 +811,7 @@
                             handleImageLoad(file, e.target.result, originalImages.length, 'image');
                             if (i === files.length - 1) {
                                 document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                updateButtonVisibility();
                             }
                         };
                         reader.readAsDataURL(file);
@@ -788,6 +822,7 @@
                         handleBase64FileLoad(file, e.target.result, originalImages.length);
                         if (i === files.length - 1) {
                             document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                            updateButtonVisibility();
                         }
                     };
                     reader.readAsText(file);
@@ -799,6 +834,8 @@
                 setTimeout(() => {
                     processFilesInBatches(files, type, endIndex);
                 }, 100);
+            } else {
+                updateButtonVisibility();
             }
         }
 
@@ -816,6 +853,7 @@
                 if (document.querySelector('.mode-button.active').dataset.mode === 'resize') {
                     updateDimensionInputs();
                 }
+                updateButtonVisibility();
             };
             img.onerror = function() {
                 showError(`無法載入圖片：${file.name}，請確認檔案格式是否為 JPEG、PNG、HEIC 或 HEIF！`);
@@ -854,6 +892,7 @@
                     thumbnail.dataset.index = index;
                     thumbnail.title = file.name;
                     document.getElementById('previewContainer').appendChild(thumbnail);
+                    updateButtonVisibility();
                     return;
                 }
             }
@@ -874,6 +913,7 @@
                         thumbnail.dataset.index = index;
                         thumbnail.title = file.name;
                         document.getElementById('previewContainer').appendChild(thumbnail);
+                        updateButtonVisibility();
                     }
                     resolve(true);
                 };
@@ -1197,6 +1237,7 @@
             document.getElementById('progressTitle').textContent = '圖片轉 Base64';
             updateProgress(0, totalImages);
 
+            // 使用for循環逐個處理，而不是批次處理
             for (let i = 0; i < originalImages.length; i++) {
                 const item = originalImages[i];
                 if (item.type !== 'image') continue;
@@ -1228,10 +1269,8 @@
                         zip.file(`${item.file.name}.txt`, base64String);
                     }
                     
-                    // 每處理3個檔案就讓UI有機會更新
-                    if (processedCount % 3 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 10));
-                    }
+                    // 每次處理一個檔案後都讓UI更新
+                    await new Promise(resolve => setTimeout(resolve, 10));
                 } catch (err) {
                     showError(`圖片 ${item.file.name} 轉 Base64 失敗：${err.message}`);
                 }
@@ -1315,7 +1354,7 @@
 
                 try {
                     const img = new Image();
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve, reject) {
                         img.onload = resolve;
                         img.onerror = reject;
                         img.src = validBase64;
@@ -1363,7 +1402,7 @@
 
                 try {
                     const img = new Image();
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve, reject) {
                         img.onload = resolve;
                         img.onerror = reject;
                         img.src = item.base64;
@@ -1394,10 +1433,8 @@
                     thumbnail.title = newFileName;
                     document.getElementById('previewContainer').appendChild(thumbnail);
                     
-                    // 每處理3個檔案就讓UI有機會更新
-                    if (processedCount % 3 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 10));
-                    }
+                    // 每次處理一個檔案後都讓UI更新
+                    await new Promise(resolve => setTimeout(resolve, 10));
                 } catch (err) {
                     showError(`無法載入 Base64 檔案：${item.file.name}，請確認內容是否為有效的圖片 Base64 字串！`);
                 }
