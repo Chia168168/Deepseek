@@ -3,15 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TENG 圖片處理工具 v1.8</title>
+    <title>TENG 圖片處理工具 v1.9 - 效能優化版</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <style>
+        :root {
+            --primary-color: #0033A0;
+            --secondary-color: #005B99;
+            --background-color: #E6F0FA;
+            --light-background: #F5F8FA;
+            --error-color: #ff3333;
+            --success-color: #33cc33;
+        }
+        
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #F5F8FA;
+            background-color: var(--light-background);
             color: #333;
             max-width: 900px;
             margin: 0 auto;
@@ -23,14 +32,22 @@
             gap: 15px;
         }
         h1 {
-            color: #0033A0;
+            color: var(--primary-color);
             font-size: 24px;
             margin: 0 0 15px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .version {
+            font-size: 14px;
+            color: var(--secondary-color);
+            font-weight: normal;
         }
         .section {
-            background-color: #E6F0FA;
-            border: 1px solid #005B99;
+            background-color: var(--background-color);
+            border: 1px solid var(--secondary-color);
             border-radius: 6px;
             padding: 15px;
             display: flex;
@@ -46,35 +63,39 @@
             font-size: 14px;
             padding: 8px 16px;
             cursor: pointer;
-            background-color: #E6F0FA;
-            border: 1px solid #005B99;
+            background-color: var(--background-color);
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
-            color: #005B99;
-            transition: background-color 0.2s, color 0.2s;
+            color: var(--secondary-color);
+            transition: all 0.2s;
         }
         .file-button:hover, .clear-button:hover {
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             color: #FFFFFF;
         }
         .process-button {
             font-size: 18px;
             padding: 10px 20px;
             cursor: pointer;
-            background-color: #E6F0FA;
-            border: 1px solid #005B99;
+            background-color: var(--background-color);
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
-            color: #005B99;
-            transition: background-color 0.2s, color 0.2s;
+            color: var(--secondary-color);
+            transition: all 0.2s;
         }
         .process-button:hover {
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             color: #FFFFFF;
+        }
+        .process-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         #downloadButton {
             font-size: 16px;
             padding: 10px 20px;
             cursor: pointer;
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             border: none;
             border-radius: 4px;
             color: #FFFFFF;
@@ -82,12 +103,12 @@
             transition: background-color 0.2s;
         }
         #downloadButton:hover {
-            background-color: #0033A0;
+            background-color: var(--primary-color);
         }
         #fileList {
             max-height: 120px;
             overflow-y: auto;
-            border: 1px solid #005B99;
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
             padding: 10px;
             font-size: 12px;
@@ -95,32 +116,36 @@
         }
         .file-item {
             margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .file-item:last-child {
+            border-bottom: none;
         }
         .thumbnail-container {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
         }
         .thumbnail {
             max-width: 60px;
             max-height: 60px;
             object-fit: contain;
-            border: 1px solid #005B99;
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
-        }
-        .base64-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
         }
         textarea {
             width: 100%;
             height: 100px;
             font-size: 12px;
-            border: 1px solid #005B99;
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
             resize: vertical;
             background-color: #FFFFFF;
+            padding: 8px;
         }
         .hidden {
             display: none !important;
@@ -136,7 +161,7 @@
         }
         label {
             font-size: 14px;
-            color: #0033A0;
+            color: var(--primary-color);
             font-weight: 500;
             min-width: 80px;
         }
@@ -144,7 +169,7 @@
             width: 100px;
             padding: 6px;
             font-size: 14px;
-            border: 1px solid #005B99;
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
             background-color: #FFFFFF;
         }
@@ -161,52 +186,68 @@
             font-size: 14px;
             padding: 8px 16px;
             cursor: pointer;
-            background-color: #E6F0FA;
-            border: 1px solid #005B99;
+            background-color: var(--background-color);
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
-            color: #005B99;
-            transition: background-color 0.2s, color 0.2s;
+            color: var(--secondary-color);
+            transition: all 0.2s;
         }
         .mode-button.active, .dimension-button.active, .size-button.active, .quality-button.active, .format-button.active {
-            background-color: #0033A0;
+            background-color: var(--primary-color);
             color: #FFFFFF;
-            border-color: #0033A0;
+            border-color: var(--primary-color);
         }
         .mode-button:hover, .dimension-button:hover, .size-button:hover, .quality-button:hover, .format-button:hover {
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             color: #FFFFFF;
         }
         .progress-container {
             display: none;
             margin-top: 10px;
+            width: 100%;
+        }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
         }
         .progress-bar {
             width: 100%;
-            height: 16px;
-            background-color: #E6F0FA;
-            border: 1px solid #005B99;
+            height: 20px;
+            background-color: var(--background-color);
+            border: 1px solid var(--secondary-color);
             border-radius: 4px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             width: 0%;
             transition: width 0.3s;
         }
         .progress-text {
             font-size: 12px;
-            color: #0033A0;
+            color: var(--primary-color);
             text-align: center;
             margin-top: 5px;
         }
         .error-message {
             display: none;
             background-color: #ffe6e6;
-            border: 1px solid #ff3333;
+            border: 1px solid var(--error-color);
             padding: 10px;
             border-radius: 4px;
-            color: #ff3333;
+            color: var(--error-color);
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .success-message {
+            display: none;
+            background-color: #e6ffe6;
+            border: 1px solid var(--success-color);
+            padding: 10px;
+            border-radius: 4px;
+            color: var(--success-color);
             font-size: 12px;
             margin-top: 10px;
         }
@@ -218,7 +259,7 @@
         .tooltip .tooltip-text {
             visibility: hidden;
             width: 200px;
-            background-color: #005B99;
+            background-color: var(--secondary-color);
             color: #FFFFFF;
             text-align: center;
             border-radius: 4px;
@@ -238,14 +279,38 @@
         }
         .help-text {
             font-size: 12px;
-            color: #005B99;
+            color: var(--secondary-color);
             margin-top: 5px;
+        }
+        .performance-note {
+            font-size: 12px;
+            color: var(--secondary-color);
+            background-color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--secondary-color);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-ready {
+            background-color: var(--success-color);
+        }
+        .status-processing {
+            background-color: orange;
+        }
+        .status-complete {
+            background-color: var(--secondary-color);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>TENG 圖片處理工具 v1.8</h1>
+        <h1>TENG 圖片處理工具 <span class="version">v1.9 - 效能優化版</span></h1>
         
         <div class="section">
             <label>處理模式</label>
@@ -287,7 +352,9 @@
         </div>
         
         <div class="section">
-            <h3 id="fileListHeader" style="margin: 0; font-size: 16px; color: #0033A0;">已選擇的檔案：0 張</h3>
+            <h3 id="fileListHeader" style="margin: 0; font-size: 16px; color: #0033A0;">
+                <span class="status-indicator status-ready"></span>已選擇的檔案：<span id="fileCount">0</span> 張
+            </h3>
             <div id="fileList"></div>
         </div>
         
@@ -353,6 +420,10 @@
             </div>
         </div>
         
+        <div class="performance-note">
+            <strong>效能提示：</strong> 處理大量圖片時，系統會自動分批處理以避免瀏覽器卡頓。處理過程中請勿關閉頁面。
+        </div>
+        
         <div class="section">
             <div class="file-button-container">
                 <button id="resizeButton" class="process-button mode-specific" data-mode="resize" onclick="processResize()">調整尺寸與格式</button>
@@ -362,13 +433,19 @@
         </div>
         
         <div class="section progress-container" id="progressContainer">
+            <div class="progress-header">
+                <span id="progressTitle">處理進度</span>
+                <span id="progressPercentage">0%</span>
+            </div>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
-            <div class="progress-text" id="progressText">處理中：0/0</div>
+            <div class="progress-text" id="progressText">等待中...</div>
+            <div id="timeRemaining" class="progress-text"></div>
         </div>
         
         <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
         
         <div class="section">
             <button id="downloadButton">下載結果</button>
@@ -401,6 +478,10 @@
         let currentHeightValue = '1024';
         let currentQualityValue = '0.9';
         let currentFormatValue = 'image/jpeg';
+        let isProcessing = false;
+        let startTime = null;
+        let processedCount = 0;
+        let totalToProcess = 0;
 
         // 檢查瀏覽器是否支援 webkitdirectory
         function checkDirectorySupport() {
@@ -420,6 +501,11 @@
 
         // 觸發檔案輸入
         function triggerFileInput(inputId) {
+            if (isProcessing) {
+                showError('請等待當前處理完成後再選擇檔案');
+                return;
+            }
+            
             const mode = document.querySelector('.mode-button.active').dataset.mode;
             if ((inputId === 'base64FolderInput' || inputId === 'base64FileInput') && mode !== 'base64') {
                 showError('請先切換到「Base64 互轉」模式！');
@@ -447,6 +533,11 @@
 
         // 模式切換
         function switchMode(mode) {
+            if (isProcessing) {
+                showError('請等待當前處理完成後再切換模式');
+                return;
+            }
+            
             document.querySelectorAll('.mode-button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
             });
@@ -518,6 +609,11 @@
 
         // 清空檔案
         function clearFiles() {
+            if (isProcessing) {
+                showError('請等待當前處理完成後再清空檔案');
+                return;
+            }
+            
             originalImages = [];
             processedBlobs = [];
             base64Data = [];
@@ -527,6 +623,8 @@
             document.getElementById('base64Text').value = '';
             document.getElementById('downloadButton').style.display = 'none';
             document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('fileCount').textContent = '0';
+            document.querySelector('.status-indicator').className = 'status-indicator status-ready';
             currentWidthValue = '1024';
             currentHeightValue = '1024';
             currentQualityValue = '0.9';
@@ -550,8 +648,22 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+            const successDiv = document.getElementById('successMessage');
+            successDiv.style.display = 'none';
             setTimeout(() => {
                 errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // 顯示成功訊息
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.style.display = 'none';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
             }, 5000);
         }
 
@@ -601,10 +713,23 @@
                 }
             }
 
-            validFiles.forEach((file, index) => {
+            // 顯示載入中的狀態
+            document.querySelector('.status-indicator').className = 'status-indicator status-processing';
+            document.getElementById('fileCount').textContent = validFiles.length;
+            
+            // 分批處理檔案，避免阻塞UI
+            processFilesInBatches(validFiles, type, 0);
+        }
+
+        function processFilesInBatches(files, type, startIndex) {
+            const batchSize = 5; // 每批處理5個檔案
+            const endIndex = Math.min(startIndex + batchSize, files.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const file = files[i];
                 if (originalImages.some(img => img.file.name === file.name && img.file.size === file.size)) {
                     showError(`檔案 ${file.name} 已存在，請選擇其他檔案！`);
-                    return;
+                    continue;
                 }
 
                 if (type === 'image') {
@@ -615,6 +740,9 @@
                                 const reader = new FileReader();
                                 reader.onload = function(e) {
                                     handleImageLoad(file, e.target.result, originalImages.length, 'image');
+                                    if (i === files.length - 1) {
+                                        document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                    }
                                 };
                                 reader.readAsDataURL(result);
                             })
@@ -623,6 +751,9 @@
                                 const reader = new FileReader();
                                 reader.onload = function(e) {
                                     handleImageLoad(file, e.target.result, originalImages.length, 'image');
+                                    if (i === files.length - 1) {
+                                        document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                                    }
                                 };
                                 reader.readAsDataURL(file);
                             });
@@ -630,6 +761,9 @@
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             handleImageLoad(file, e.target.result, originalImages.length, 'image');
+                            if (i === files.length - 1) {
+                                document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                            }
                         };
                         reader.readAsDataURL(file);
                     }
@@ -637,10 +771,20 @@
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         handleBase64FileLoad(file, e.target.result, originalImages.length);
+                        if (i === files.length - 1) {
+                            document.querySelector('.status-indicator').className = 'status-indicator status-complete';
+                        }
                     };
                     reader.readAsText(file);
                 }
-            });
+            }
+            
+            // 如果還有更多檔案，設置下一個批次
+            if (endIndex < files.length) {
+                setTimeout(() => {
+                    processFilesInBatches(files, type, endIndex);
+                }, 100);
+            }
         }
 
         function handleImageLoad(file, imageSrc, index, type) {
@@ -729,7 +873,7 @@
             const fileList = document.getElementById('fileList');
             fileList.innerHTML = '';
             const mode = document.querySelector('.mode-button.active').dataset.mode;
-            document.getElementById('fileListHeader').textContent = `已選擇的檔案：${originalImages.length} 張`;
+            document.getElementById('fileCount').textContent = originalImages.length;
 
             originalImages.forEach((item, index) => {
                 const listItem = document.createElement('div');
@@ -845,14 +989,53 @@
         document.getElementById('qualityInput').addEventListener('input', updateFileList);
         document.getElementById('aspectRatio').addEventListener('change', updateDimensions);
 
-        function updateProgress(current, total) {
+        function updateProgress(current, total, processedItem = null) {
             const progressContainer = document.getElementById('progressContainer');
             const progressFill = document.getElementById('progressFill');
             const progressText = document.getElementById('progressText');
-            progressContainer.style.display = total > 1 ? 'block' : 'none';
-            const percentage = (current / total) * 100;
+            const progressPercentage = document.getElementById('progressPercentage');
+            const timeRemaining = document.getElementById('timeRemaining');
+            
+            progressContainer.style.display = 'block';
+            const percentage = total > 0 ? (current / total) * 100 : 0;
             progressFill.style.width = `${percentage}%`;
-            progressText.textContent = `處理中：${current}/${total}`;
+            progressPercentage.textContent = `${Math.round(percentage)}%`;
+            
+            if (processedItem) {
+                progressText.textContent = `處理中：${current}/${total} (${processedItem})`;
+            } else {
+                progressText.textContent = `處理中：${current}/${total}`;
+            }
+            
+            // 計算剩餘時間
+            if (startTime && current > 0) {
+                const elapsedTime = (Date.now() - startTime) / 1000; // 秒
+                const timePerItem = elapsedTime / current;
+                const remainingItems = total - current;
+                const remainingTime = timePerItem * remainingItems;
+                
+                if (remainingTime > 60) {
+                    timeRemaining.textContent = `預計剩餘時間：${Math.round(remainingTime / 60)} 分鐘`;
+                } else {
+                    timeRemaining.textContent = `預計剩餘時間：${Math.round(remainingTime)} 秒`;
+                }
+            }
+        }
+
+        function disableUI() {
+            isProcessing = true;
+            document.querySelectorAll('.file-button, .process-button, .clear-button').forEach(btn => {
+                btn.disabled = true;
+            });
+            document.querySelector('.status-indicator').className = 'status-indicator status-processing';
+        }
+
+        function enableUI() {
+            isProcessing = false;
+            document.querySelectorAll('.file-button, .process-button, .clear-button').forEach(btn => {
+                btn.disabled = false;
+            });
+            document.querySelector('.status-indicator').className = 'status-indicator status-complete';
         }
 
         async function processResize() {
@@ -861,6 +1044,7 @@
                 return;
             }
 
+            disableUI();
             const format = currentFormatValue;
             const widthInput = parseInt(document.getElementById('widthInput').value);
             const heightInput = parseInt(document.getElementById('heightInput').value);
@@ -872,14 +1056,19 @@
             processedBlobs = [];
             document.getElementById('previewContainer').innerHTML = '';
             const totalImages = originalImages.filter(item => item.type === 'image').length;
-            let processedCount = 0;
+            processedCount = 0;
+            totalToProcess = totalImages;
+            startTime = Date.now();
+
+            document.getElementById('progressTitle').textContent = '調整尺寸與格式';
+            updateProgress(0, totalImages);
 
             for (let i = 0; i < originalImages.length; i++) {
                 const item = originalImages[i];
                 if (item.type !== 'image') continue;
 
                 processedCount++;
-                updateProgress(processedCount, totalImages);
+                updateProgress(processedCount, totalImages, item.file.name);
 
                 const img = item.img;
                 const canvas = document.createElement('canvas');
@@ -930,6 +1119,11 @@
                     thumbnail.dataset.index = i;
                     thumbnail.title = newFileName;
                     document.getElementById('previewContainer').appendChild(thumbnail);
+                    
+                    // 每處理5個檔案就讓UI有機會更新
+                    if (processedCount % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
                 } catch (err) {
                     showError(`處理圖片 ${item.file.name} 失敗：${err.message}`);
                 }
@@ -945,6 +1139,7 @@
                 downloadButton.textContent = '下載處理後的圖片';
             } else {
                 try {
+                    updateProgress(processedCount, totalImages, '生成ZIP檔案中...');
                     downloadBlob = await zip.generateAsync({ type: 'blob' });
                     downloadFileName = 'processed_images.zip';
                     downloadButton.textContent = '下載 ZIP 壓縮檔';
@@ -952,6 +1147,9 @@
                     showError(`生成 ZIP 檔案失敗：${err.message}`);
                 }
             }
+            
+            enableUI();
+            showSuccess('圖片處理完成！');
         }
 
         async function processImageToBase64() {
@@ -960,18 +1158,24 @@
                 return;
             }
 
+            disableUI();
             const zip = new JSZip();
             base64Data = [];
             document.getElementById('base64OutputContainer').innerHTML = '';
             const totalImages = originalImages.filter(item => item.type === 'image').length;
-            let processedCount = 0;
+            processedCount = 0;
+            totalToProcess = totalImages;
+            startTime = Date.now();
+
+            document.getElementById('progressTitle').textContent = '圖片轉 Base64';
+            updateProgress(0, totalImages);
 
             for (let i = 0; i < originalImages.length; i++) {
                 const item = originalImages[i];
                 if (item.type !== 'image') continue;
 
                 processedCount++;
-                updateProgress(processedCount, totalImages);
+                updateProgress(processedCount, totalImages, item.file.name);
 
                 const canvas = document.createElement('canvas');
                 canvas.width = item.img.width;
@@ -991,6 +1195,11 @@
                     if (totalImages > 1) {
                         zip.file(`${item.file.name}.txt`, base64String);
                     }
+                    
+                    // 每處理3個檔案就讓UI有機會更新
+                    if (processedCount % 3 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
                 } catch (err) {
                     showError(`圖片 ${item.file.name} 轉 Base64 失敗：${err.message}`);
                 }
@@ -1007,6 +1216,7 @@
                 downloadButton.textContent = '下載 Base64 檔案';
             } else {
                 try {
+                    updateProgress(processedCount, totalImages, '生成ZIP檔案中...');
                     downloadBlob = await zip.generateAsync({ type: 'blob' });
                     downloadFileName = 'base64_files.zip';
                     downloadButton.textContent = '下載 Base64 ZIP 壓縮檔';
@@ -1014,6 +1224,9 @@
                     showError(`生成 Base64 ZIP 檔案失敗：${err.message}`);
                 }
             }
+            
+            enableUI();
+            showSuccess('Base64轉換完成！');
         }
 
         async function processBase64ToImage() {
@@ -1034,15 +1247,21 @@
                 return;
             }
 
+            disableUI();
             const zip = new JSZip();
             processedBlobs = [];
             document.getElementById('previewContainer').innerHTML = '';
             const totalItems = (base64String ? 1 : 0) + base64Files.length;
-            let processedCount = 0;
+            processedCount = 0;
+            totalToProcess = totalItems;
+            startTime = Date.now();
+
+            document.getElementById('progressTitle').textContent = 'Base64 轉圖片';
+            updateProgress(0, totalItems);
 
             if (base64String) {
                 processedCount++;
-                updateProgress(processedCount, totalItems);
+                updateProgress(processedCount, totalItems, 'Base64字串');
 
                 let validBase64 = base64String;
                 if (!base64String.startsWith('data:image/')) {
@@ -1058,97 +1277,99 @@
 
                 try {
                     const img = new Image();
-                    img.onload = async function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
-                        const fileName = `converted_image_${Date.now()}.${format.split('/')[1]}`;
-                        processedBlobs.push({ blob, name: fileName });
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = validBase64;
+                    });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
+                    const fileName = `converted_image_${Date.now()}.${format.split('/')[1]}`;
+                    processedBlobs.push({ blob, name: fileName });
 
-                        const thumbnail = document.createElement('img');
-                        thumbnail.src = URL.createObjectURL(blob);
-                        thumbnail.className = 'thumbnail';
-                        thumbnail.title = fileName;
-                        document.getElementById('previewContainer').appendChild(thumbnail);
+                    const thumbnail = document.createElement('img');
+                    thumbnail.src = URL.createObjectURL(blob);
+                    thumbnail.className = 'thumbnail';
+                    thumbnail.title = fileName;
+                    document.getElementById('previewContainer').appendChild(thumbnail);
 
-                        if (base64Files.length > 0) {
-                            zip.file(fileName, blob);
-                        } else {
-                            const downloadButton = document.getElementById('downloadButton');
-                            downloadButton.style.display = 'block';
-                            downloadBlob = blob;
-                            downloadFileName = fileName;
-                            downloadButton.textContent = '下載轉換後的圖片';
-                        }
-                        updateProgress(processedCount, totalItems);
-                    };
-                    img.onerror = function() {
-                        showError('無法載入 Base64 字串，請確認是否為有效的圖片 Base64 字串！');
-                        updateProgress(processedCount, totalItems);
-                    };
-                    img.src = validBase64;
+                    if (base64Files.length > 0) {
+                        zip.file(fileName, blob);
+                    } else {
+                        const downloadButton = document.getElementById('downloadButton');
+                        downloadButton.style.display = 'block';
+                        downloadBlob = blob;
+                        downloadFileName = fileName;
+                        downloadButton.textContent = '下載轉換後的圖片';
+                    }
                 } catch (err) {
-                    showError(`Base64 字串轉換失敗：${err.message}`);
-                    updateProgress(processedCount, totalItems);
+                    showError('無法載入 Base64 字串，請確認是否為有效的圖片 Base64 字串！');
                 }
             }
 
             for (let i = 0; i < base64Files.length; i++) {
                 const item = base64Files[i];
                 processedCount++;
-                updateProgress(processedCount, totalItems);
+                updateProgress(processedCount, totalItems, item.file.name);
 
                 try {
                     const img = new Image();
-                    img.onload = async function() {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
-                        const originalName = item.file.name.split('.').slice(0, -1).join('.');
-                        const extension = format.split('/')[1];
-                        const newFileName = `${originalName}.${extension}`;
-                        processedBlobs.push({ blob, name: newFileName });
-                        zip.file(newFileName, blob);
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = item.base64;
+                    });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, format, format === 'image/png' ? 1.0 : quality));
+                    const originalName = item.file.name.split('.').slice(0, -1).join('.');
+                    const extension = format.split('/')[1];
+                    const newFileName = `${originalName}.${extension}`;
+                    processedBlobs.push({ blob, name: newFileName });
+                    zip.file(newFileName, blob);
 
-                        const thumbnail = document.createElement('img');
-                        thumbnail.src = URL.createObjectURL(blob);
-                        thumbnail.className = 'thumbnail';
-                        thumbnail.dataset.index = originalImages.indexOf(item);
-                        thumbnail.title = newFileName;
-                        document.getElementById('previewContainer').appendChild(thumbnail);
-
-                        if (processedCount === totalItems) {
-                            try {
-                                const zipBlob = await zip.generateAsync({ type: 'blob' });
-                                const downloadButton = document.getElementById('downloadButton');
-                                downloadButton.style.display = 'block';
-                                downloadBlob = zipBlob;
-                                downloadFileName = 'converted_images.zip';
-                                downloadButton.textContent = '下載轉換後的圖片 ZIP 壓縮檔';
-                            } catch (err) {
-                                showError(`生成 ZIP 檔案失敗：${err.message}`);
-                            }
-                        }
-                        updateProgress(processedCount, totalItems);
-                    };
-                    img.onerror = function() {
-                        showError(`無法載入 Base64 檔案：${item.file.name}，請確認內容是否為有效的圖片 Base64 字串！`);
-                        updateProgress(processedCount, totalItems);
-                    };
-                    img.src = item.base64;
+                    const thumbnail = document.createElement('img');
+                    thumbnail.src = URL.createObjectURL(blob);
+                    thumbnail.className = 'thumbnail';
+                    thumbnail.dataset.index = originalImages.indexOf(item);
+                    thumbnail.title = newFileName;
+                    document.getElementById('previewContainer').appendChild(thumbnail);
+                    
+                    // 每處理3個檔案就讓UI有機會更新
+                    if (processedCount % 3 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
                 } catch (err) {
-                    showError(`Base64 檔案轉換失敗：${item.file.name}，錯誤：${err.message}`);
-                    updateProgress(processedCount, totalItems);
+                    showError(`無法載入 Base64 檔案：${item.file.name}，請確認內容是否為有效的圖片 Base64 字串！`);
+                }
+            }
+
+            if (base64Files.length > 0) {
+                try {
+                    updateProgress(processedCount, totalItems, '生成ZIP檔案中...');
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const downloadButton = document.getElementById('downloadButton');
+                    downloadButton.style.display = 'block';
+                    downloadBlob = zipBlob;
+                    downloadFileName = 'converted_images.zip';
+                    downloadButton.textContent = '下載轉換後的圖片 ZIP 壓縮檔';
+                } catch (err) {
+                    showError(`生成 ZIP 檔案失敗：${err.message}`);
                 }
             }
 
             document.getElementById('progressContainer').style.display = 'none';
+            enableUI();
+            showSuccess('Base64轉圖片完成！');
         }
     </script>
 </body>
